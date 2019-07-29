@@ -1,28 +1,21 @@
+import re
 import sys
+from datetime import datetime
 from os.path import join, dirname, abspath
 
+import qtmodern.styles
+import qtmodern.windows
+import yaml
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
 from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.common.exceptions import ElementNotVisibleException, StaleElementReferenceException, WebDriverException, \
-    NoSuchElementException
-from selenium.webdriver import ActionChains
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
-from datetime import datetime
-
-import yaml
-import qtmodern.styles
-import qtmodern.windows
-import re
-import webbrowser
-import selenium
 
 _UI = join(dirname(abspath(__file__)), 'mainwindow.ui')
 
@@ -76,7 +69,7 @@ class MainWindow(QMainWindow):
     def check_your_name(your_name):
         return bool(re.match(r'[a-zA-Z]{1,}(.*[\s]?)', your_name.lower()))
 
-    # Visit website and log in
+    # Visit website, log in, and add device/create account
     def visit_site(self):
         # Define credentials
         global username, mac_address, device_type, your_name
