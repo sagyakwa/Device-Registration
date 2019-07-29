@@ -1,7 +1,6 @@
 import sys
 from os.path import join, dirname, abspath
 
-from multiprocessing import Process
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -16,11 +15,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
+from datetime import datetime
 
 import yaml
 import qtmodern.styles
 import qtmodern.windows
 import re
+import datetime
 import webbrowser
 import selenium
 
@@ -43,6 +44,10 @@ class MainWindow(QMainWindow):
 		credentials = yaml.load(open(credential_location))
 		self.login_username = credentials['credentials']['username']
 		self.login_password = credentials['credentials']['password']
+		self.username = None
+		self.mac_address = None
+		self.device_type = None
+		self.sponsor = None
 
 	def play_gif(self):
 		gif_path = join(dirname(abspath(__file__)), 'batman.gif')
@@ -77,17 +82,17 @@ class MainWindow(QMainWindow):
 		# Define credentials
 		global username, mac_address, device_type, your_name
 		# Get the texts entered in the textbox
-		username = str(self.ui.lineEdit.text())
-		mac_address = str(self.ui.lineEdit_2.text())
-		device_type = str(self.ui.lineEdit_3.text())
-		your_name = str(self.ui.lineEdit_4.text())
+		self.username = str(self.ui.lineEdit.text())
+		self.mac_address = str(self.ui.lineEdit_2.text())
+		self.device_type = str(self.ui.lineEdit_3.text())
+		self.sponsor = str(self.ui.lineEdit_4.text())
 
 		# Make dictionary to check whether format of text boxes are correct
 		global everything
 		everything = {
-			'right_address': bool(self.check_mac_address(mac_address)),
-			'right_username': bool(self.check_username(username)),
-			'right_name': bool(self.check_your_name(your_name))
+			'right_address': bool(self.check_mac_address(self.mac_address)),
+			'right_username': bool(self.check_username(self.username)),
+			'right_name': bool(self.check_your_name(self.sponsor))
 		}
 
 		# Check to see that there is some text in the Text boxes and it is correctly formatted
@@ -106,6 +111,11 @@ class MainWindow(QMainWindow):
 				# increment progress bar
 				self.ui.progressBar.setValue(10)
 				self.login()
+				self.ui.progressBar.setValue(25)
+				if self.find_user():
+					self.add_device()
+				else:
+					self.create_new_user()
 			else:
 				self.error_msg('Check your internet connect \n and make sure you are connected to FSU\'s network')
 		else:
@@ -129,8 +139,18 @@ class MainWindow(QMainWindow):
 				(By.XPATH, xpath))
 		)
 
+		# self.browser.execute_script(f'arguments[0].value={keys_to_send}', textbox)
 		textbox.send_keys(keys_to_send)
 		print("Keys sent!")
+
+	def find_and_click(self, xpath):
+		clickable_object = WebDriverWait(self.browser, 20).until(
+			ec.presence_of_element_located(
+				(By.XPATH, xpath)
+			)
+		)
+
+		clickable_object.click()
 
 	# Function to Login
 	def login(self):
@@ -152,10 +172,66 @@ class MainWindow(QMainWindow):
 		except NoSuchElementException:
 			print('Something ain\'t right')
 
+	def find_user(self):
+		users_button_xpath = '//*[@id="topMenuBar"]/ul/li[2]/a'
+		filter_bar_xpath = '//*[@id="registrationTableForm"]/div[2]/input[1]'
+		search_button_xpath = '//*[@id="registrationTableForm"]/div[2]/input[2]'
+		user_checkbox_xpath = '//*[@id="adminUserTable"]/tbody/tr/td[1]/input'
+		self.find_and_click(users_button_xpath)
+		self.find_and_send_keys(filter_bar_xpath, self.username)
+		self.find_and_click(search_button_xpath)
+		try:
+			self.browser.find_element_by_xpath(user_checkbox_xpath)
+		except NoSuchElementException:
+			return False
+		else:
+			return True
+
+	def create_new_user(self):
+		current_date = datetime.now()
+		registration_start_date = current_date.strftime("%m/%d/%Y")
+		registration_end_date = f"{current_date.strftime('%m')}/{current_date.strftime('%d')}/{int(current_date.strftime('%Y')) + 2} "
+
+		add_user_button = '//*[@id="showUsersAdd"]'
+		username_textbox = '//*[@id="addEditUserTable"]/tbody/tr[4]/td[2]/input'
+		email_textbox = '//*[@id="addEditUserTable"]/tbody/tr[5]/td[2]/input'
+		start_time_textbox = '//*[@id="regStartTime"]'
+		expires_time_textbox = '//*[@id="regExpirationTime"]'
+		sponsor_textbox = '//*[@id="addEditUserTable"]/tbody/tr[9]/td[2]/input'
+		user_type_dropdown = '//*[@id="addEditUserTable"]/tbody/tr[10]/td[2]/select'
+		submit_button = '//*[@id="addUser"]'
+
+		self.find_and_click(add_user_button)
+		self.find_and_send_keys(username_textbox, self.username)
+		self.find_and_send_keys(email_textbox, f"{self.username}@student.framingham/edu")
+		self.find_and_send_keys(start_time_textbox, registration_start_date)
+		self.find_and_send_keys(expires_time_textbox, registration_end_date)
+		self.find_and_send_keys(sponsor_textbox, self.sponsor)
+		dropdown_selection = Select(self.browser.find_element_by_xpath(user_type_dropdown))
+		dropdown_selection.select_by_value("Web Authentication")
+		self.find_and_click(submit_button)
+
+	def add_device(self):
+		user_checkbox_xpath = '//*[@id="adminUserTable"]/tbody/tr/td[1]/input'
+		register_new_device_xpath = '//*[@id="showDevicesAdd"]'
+		mac_address_textbox = '//*[@id="adminRegisterDeviceTable"]/tbody/tr[2]/td[2]/input'
+		group_dropdown = '//*[@id="adminRegisterDeviceTable"]/tbody/tr[3]/td[2]/select'
+		description_textbox = '//*[@id="adminRegisterDeviceTable"]/tbody/tr[4]/td[2]/input'
+		sponsor_textbox = '//*[@id="adminRegisterDeviceTable"]/tbody/tr[5]/td[2]/input'
+		submit_button = '//*[@id="addDevice"]'
+
+		self.find_and_click(user_checkbox_xpath)
+		self.find_and_click(register_new_device_xpath)
+		self.find_and_send_keys(mac_address_textbox, self.mac_address)
+		dropdown_selection = Select(self.browser.find_element_by_xpath(group_dropdown))
+		dropdown_selection.select_by_value("Registered Guests")
+		self.find_and_send_keys(description_textbox, self.device_type)
+		self.find_and_send_keys(sponsor_textbox, self.sponsor)
+		self.find_and_click(submit_button)
+
 	# When the button is clicked
 	@Slot()
 	def on_pushButton_clicked(self):
-		# (This made it ask me if I want to close.) self.close()
 		self.visit_site()
 
 	# If the user clicks the red button to exit the window
@@ -167,6 +243,7 @@ class MainWindow(QMainWindow):
 		# if they reply yes, exit window
 		if reply == QMessageBox.Yes:
 			event.accept()
+			self.browser.quit()
 		# if they reply no, stay where you are
 		else:
 			event.ignore()
