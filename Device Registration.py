@@ -26,6 +26,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)
         self.ui = uic.loadUi(_UI, self)
+        self.center()
 
         # make browser headless
         options = Options()
@@ -54,6 +55,14 @@ class MainWindow(QMainWindow):
     def error_msg(self, error_string):
         QMessageBox.about(self, 'Errors in your form!', error_string)
 
+    # Center our application instead of putting it in the top left
+    def center(self):
+        frame_gm = self.frameGeometry()
+        screen = QApplication.desktop().screenNumber(QApplication.desktop().cursor().pos())
+        center_point = QApplication.desktop().screenGeometry(screen).center()
+        frame_gm.moveCenter(center_point)
+        self.move(frame_gm.topLeft())
+
     # Check to see if mac address is valid format eg. (00:00:00:00:00:000 or (00-00-00-00-00-00)
     @staticmethod
     def check_mac_address(mac_address):
@@ -71,8 +80,6 @@ class MainWindow(QMainWindow):
 
     # Visit website, log in, and add device/create account
     def visit_site(self):
-        # Define credentials
-        global username, mac_address, device_type, your_name
         # Get the texts entered in the textbox
         self.username = str(self.ui.lineEdit.text())
         self.mac_address = str(self.ui.lineEdit_2.text())
@@ -100,7 +107,7 @@ class MainWindow(QMainWindow):
             # Continue if we don't find an error message and are connected to the internet
             except NoSuchElementException:
                 # increment progress bar
-                self.ui.progressBar.setValue(10)
+                self.ui.progressBar.setValue(15)
                 self.login()
                 self.ui.progressBar.setValue(30)
                 if self.find_user():
