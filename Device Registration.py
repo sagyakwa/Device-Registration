@@ -122,8 +122,8 @@ class MainWindow(QMainWindow):
                     self.browser.quit()
                     self.clear_textboxes()
                     self.ui.progressBar.setValue(0)
-                    self.popup_msg('Congratulations', f'{self.username} has been registered with the following MAC '
-                                                      f'Address: {self.mac_address}')
+                    self.popup_msg('Congratulations', f'User {self.username} has been registered\nwith the following '
+                                                      f'MAC Address: {self.mac_address}')
                 else:
                     self.create_new_user()
                     self.ui.progressBar.setValue(60)
@@ -134,8 +134,8 @@ class MainWindow(QMainWindow):
                     self.browser.quit()
                     self.clear_textboxes()
                     self.ui.progressBar.setValue(0)
-                    self.popup_msg('Congratulations', f'{self.username} has been registered with the following MAC '
-                                                      f'Address: {self.mac_address}')
+                    self.popup_msg('Congratulations', f'User {self.username} has been registered\nwith the following '
+                                                      f'MAC Address: {self.mac_address}')
 
             else:
                 self.popup_msg('Errors in yout form', 'Check your internet connect \n and make sure you are connected '
