@@ -39,7 +39,6 @@ class MainWindow(QMainWindow):
 
     def play_gif(self):
         gif_path = join(dirname(abspath(__file__)), 'batman.gif')
-        global loading_gif
         loading_gif = self.QtGui.QMovie(gif_path)
 
         self.ui.label_7.setMovie(loading_gif)
@@ -47,8 +46,8 @@ class MainWindow(QMainWindow):
         loading_gif.start()
 
     # Function to display an error if we get one
-    def error_msg(self, error_string):
-        QMessageBox.about(self, 'Errors in your form!', error_string)
+    def popup_msg(self, title, error_string):
+        QMessageBox.about(self, title, error_string)
 
     # Center our application instead of putting it in the top left
     def center(self):
@@ -73,13 +72,17 @@ class MainWindow(QMainWindow):
     def check_your_name(your_name):
         return bool(re.match(r'[a-zA-Z]{1,}(.*[\s]?)', your_name.lower()))
 
+    def clear_textboxes(self):
+        self.ui.lineEdit.clear()
+        self.ui.lineEdit_2.clear()
+        self.ui.lineEdit_3.clear()
+        self.ui.lineEdit_4.clear()
+
     # Visit website, log in, and add device/create account
     def visit_site(self):
         # make browser headless
         options = Options()
-        options.headless = False  # Change to True to make headless
-
-        self.browser = webdriver.Chrome(options=options)
+        options.headless = True  # True to make headless, False to make browser visible
 
         # Get the texts entered in the textbox
         self.username = str(self.ui.lineEdit.text())
@@ -97,6 +100,7 @@ class MainWindow(QMainWindow):
 
         # Check to see that there is some text in the Text boxes and it is correctly formatted
         if all(everything.values()):
+            self.browser = webdriver.Chrome(options=options)
             # Play the gif
             self.play_gif()
             # go to the homepage
@@ -115,6 +119,11 @@ class MainWindow(QMainWindow):
                     self.ui.progressBar.setValue(75)
                     self.add_device()
                     self.ui.progressBar.setValue(100)
+                    self.browser.quit()
+                    self.clear_textboxes()
+                    self.ui.progressBar.setValue(0)
+                    self.popup_msg('Congratulations', f'{self.username} has been registered with the following MAC '
+                                                      f'Address: {self.mac_address}')
                 else:
                     self.create_new_user()
                     self.ui.progressBar.setValue(60)
@@ -122,8 +131,15 @@ class MainWindow(QMainWindow):
                     self.ui.progressBar.setValue(80)
                     self.add_device()
                     self.ui.progressBar.setValue(100)
+                    self.browser.quit()
+                    self.clear_textboxes()
+                    self.ui.progressBar.setValue(0)
+                    self.popup_msg('Congratulations', f'{self.username} has been registered with the following MAC '
+                                                      f'Address: {self.mac_address}')
+
             else:
-                self.error_msg('Check your internet connect \n and make sure you are connected to FSU\'s network')
+                self.popup_msg('Errors in yout form', 'Check your internet connect \n and make sure you are connected '
+                                                      'to FSU\'s network')
         else:
             # Go through the dictionary and give appropriate error messages if it turns out something is wrong
             for _ in everything:
@@ -136,7 +152,7 @@ class MainWindow(QMainWindow):
                     msg += 'Invalid username!\n'
                 if not everything['right_name']:
                     msg += 'You entered invalid values for your name!\n'
-            self.error_msg(msg)
+            self.popup_msg('Errors in your form', msg)
     # Handle any exception we might've forgotten
 
     def find_and_send_keys(self, xpath, keys_to_send):
@@ -174,7 +190,7 @@ class MainWindow(QMainWindow):
             login_button.click()
             self.browser.refresh()
         except NoSuchElementException:
-            self.error_msg("Unable to login. Something has changed on the website")
+            self.popup_msg("Unable to login. Something has changed on the website")
 
     def find_user(self):
         users_button_xpath = '//*[@id="topMenuBar"]/ul/li[2]/a'
