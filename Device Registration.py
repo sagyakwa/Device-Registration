@@ -27,12 +27,7 @@ class MainWindow(QMainWindow):
         QMainWindow.__init__(self)
         self.ui = uic.loadUi(_UI, self)
         self.center()
-
-        # make browser headless
-        options = Options()
-        options.headless = False  # Change to True to make headless
-
-        self.browser = webdriver.Chrome(options=options)
+        self.browser = None
         credential_location = join(dirname(abspath(__file__)), 'credentials')
         credentials = yaml.safe_load(open(credential_location))
         self.login_username = credentials['credentials']['username']
@@ -80,6 +75,12 @@ class MainWindow(QMainWindow):
 
     # Visit website, log in, and add device/create account
     def visit_site(self):
+        # make browser headless
+        options = Options()
+        options.headless = False  # Change to True to make headless
+
+        self.browser = webdriver.Chrome(options=options)
+
         # Get the texts entered in the textbox
         self.username = str(self.ui.lineEdit.text())
         self.mac_address = str(self.ui.lineEdit_2.text())
