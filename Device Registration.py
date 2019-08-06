@@ -1,3 +1,5 @@
+import configparser
+import os
 import re
 import sys
 from datetime import datetime
@@ -6,6 +8,10 @@ from os.path import join, dirname, abspath
 import qtmodern.styles
 import qtmodern.windows
 import yaml
+from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool
+from PyQt5.QtGui import QPixmap, QIcon
+from PyQt5.QtWidgets import QSplashScreen
+from PyQt5 import QtGui
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -16,46 +22,89 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
+from modern_ui import styles
+from modern_ui import windows
 
 _UI = join(dirname(abspath(__file__)), 'mainwindow.ui')
+_config = join(dirname(abspath(__file__)), 'config')
 
 
-class MainWindow(QMainWindow):
-    from PyQt5 import QtGui
+class Signals(QObject):
+    label_update_signal = pyqtSignal(str)
+    popup_signal = pyqtSignal(str, str)
+    clear_textboxes_signal = pyqtSignal()
+    disable_widgets_signal = pyqtSignal(bool)
 
-    def __init__(self):
-        QMainWindow.__init__(self)
-        self.ui = uic.loadUi(_UI, self)
-        self.center()
-        self.browser = None
+
+class RegisterThread(QRunnable):
+    def __init__(self, username, mac_address, device_type, sponsor):
+        super(RegisterThread, self).__init__()
+        self.signals = Signals()
         credential_location = join(dirname(abspath(__file__)), 'credentials')
         credentials = yaml.safe_load(open(credential_location))
         self.login_username = credentials['credentials']['username']
         self.login_password = credentials['credentials']['password']
-        self.username = None
-        self.mac_address = None
-        self.device_type = None
-        self.sponsor = None
+        self.username = username
+        self.mac_address = mac_address
+        self.device_type = device_type
+        self.sponsor = sponsor
+        # make browser headless
+        self.options = Options()
+        self.options.headless = False  # True to make headless, False to make browser visible
 
-    def play_gif(self):
-        gif_path = join(dirname(abspath(__file__)), 'batman.gif')
-        loading_gif = self.QtGui.QMovie(gif_path)
+    def run(self):
+        # Make dictionary to check whether format of text boxes are correct
+        global everything
+        everything = {
+            'right_address': bool(self.check_mac_address(self.mac_address)),
+            'right_username': bool(self.check_username(self.username)),
+            'right_name': bool(self.check_your_name(self.sponsor))
+        }
 
-        self.ui.label_7.setMovie(loading_gif)
-        self.ui.label_7.setScaledContents(True)
-        loading_gif.start()
+        # Check to see that there is some text in the Text boxes and it is correctly formatted
+        if all(everything.values()):
+            self.browser = webdriver.Chrome(options=self.options)
+            # go to the homepage
+            self.browser.get('http://fsunac-1.framingham.edu/administration')
+            # Check to see if on school Wifi
+            try:
+                self.browser.find_element_by_xpath("//*[contains(text(), 'ERR_NAME_NOT_RESOLVED')]")
+                self.browser.find_element_by_xpath("//*[contains(text(), 'ERR_INTERNET_DISCONNECTED')]")
+            # Continue if we don't find an error message and are connected to the internet
+            except NoSuchElementException:
+                # increment progress bar
+                self.login()
+                if self.find_user():
+                    self.add_device()
+                    self.browser.quit()
+                    self.signals.clear_textboxes_signal.emit()
+                    self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been registered\nwith the following '
+                    f'MAC Address: {self.mac_address}')
+                else:
+                    self.create_new_user()
+                    self.find_user()
+                    self.add_device()
+                    self.browser.quit()
+                    self.clear_textboxes()
+                    self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been registered\nwith the following '
+                    f'MAC Address: {self.mac_address}')
 
-    # Function to display an error if we get one
-    def popup_msg(self, title, error_string):
-        QMessageBox.about(self, title, error_string)
-
-    # Center our application instead of putting it in the top left
-    def center(self):
-        frame_gm = self.frameGeometry()
-        screen = QApplication.desktop().screenNumber(QApplication.desktop().cursor().pos())
-        center_point = QApplication.desktop().screenGeometry(screen).center()
-        frame_gm.moveCenter(center_point)
-        self.move(frame_gm.topLeft())
+            else:
+                self.signals.popup_signal.emit('Errors in yout form', 'Check your internet connect \n and make sure you are connected '
+                                                      'to FSU\'s network')
+        else:
+            # Go through the dictionary and give appropriate error messages if it turns out something is wrong
+            for _ in everything:
+                global msg
+                msg = ''
+                if not everything['right_address']:
+                    msg += 'Invalid MAC address format!\n'
+                    pass
+                if not everything['right_username']:
+                    msg += 'Invalid username!\n'
+                if not everything['right_name']:
+                    msg += 'You entered invalid values for your name!\n'
+            self.signals.popup_signal.emit('Errors in your form', msg)
 
     # Check to see if mac address is valid format eg. (00:00:00:00:00:000 or (00-00-00-00-00-00)
     @staticmethod
@@ -71,89 +120,6 @@ class MainWindow(QMainWindow):
     @staticmethod
     def check_your_name(your_name):
         return bool(re.match(r'[a-zA-Z]{1,}(.*[\s]?)', your_name.lower()))
-
-    def clear_textboxes(self):
-        self.ui.lineEdit.clear()
-        self.ui.lineEdit_2.clear()
-        self.ui.lineEdit_3.clear()
-        self.ui.lineEdit_4.clear()
-
-    # Visit website, log in, and add device/create account
-    def visit_site(self):
-        # make browser headless
-        options = Options()
-        options.headless = True  # True to make headless, False to make browser visible
-
-        # Get the texts entered in the textbox
-        self.username = str(self.ui.lineEdit.text())
-        self.mac_address = str(self.ui.lineEdit_2.text())
-        self.device_type = str(self.ui.lineEdit_3.text())
-        self.sponsor = str(self.ui.lineEdit_4.text())
-
-        # Make dictionary to check whether format of text boxes are correct
-        global everything
-        everything = {
-            'right_address': bool(self.check_mac_address(self.mac_address)),
-            'right_username': bool(self.check_username(self.username)),
-            'right_name': bool(self.check_your_name(self.sponsor))
-        }
-
-        # Check to see that there is some text in the Text boxes and it is correctly formatted
-        if all(everything.values()):
-            self.browser = webdriver.Chrome(options=options)
-            # Play the gif
-            self.play_gif()
-            # go to the homepage
-            self.browser.get('http://fsunac-1.framingham.edu/administration')
-            # Check to see if on school Wifi
-            try:
-                self.browser.find_element_by_xpath("//*[contains(text(), 'ERR_NAME_NOT_RESOLVED')]")
-                self.browser.find_element_by_xpath("//*[contains(text(), 'ERR_INTERNET_DISCONNECTED')]")
-            # Continue if we don't find an error message and are connected to the internet
-            except NoSuchElementException:
-                # increment progress bar
-                self.ui.progressBar.setValue(15)
-                self.login()
-                self.ui.progressBar.setValue(30)
-                if self.find_user():
-                    self.ui.progressBar.setValue(75)
-                    self.add_device()
-                    self.ui.progressBar.setValue(100)
-                    self.browser.quit()
-                    self.clear_textboxes()
-                    self.ui.progressBar.setValue(0)
-                    self.popup_msg('Congratulations', f'User {self.username} has been registered\nwith the following '
-                                                      f'MAC Address: {self.mac_address}')
-                else:
-                    self.create_new_user()
-                    self.ui.progressBar.setValue(60)
-                    self.find_user()
-                    self.ui.progressBar.setValue(80)
-                    self.add_device()
-                    self.ui.progressBar.setValue(100)
-                    self.browser.quit()
-                    self.clear_textboxes()
-                    self.ui.progressBar.setValue(0)
-                    self.popup_msg('Congratulations', f'User {self.username} has been registered\nwith the following '
-                                                      f'MAC Address: {self.mac_address}')
-
-            else:
-                self.popup_msg('Errors in yout form', 'Check your internet connect \n and make sure you are connected '
-                                                      'to FSU\'s network')
-        else:
-            # Go through the dictionary and give appropriate error messages if it turns out something is wrong
-            for _ in everything:
-                global msg
-                msg = ''
-                if not everything['right_address']:
-                    msg += 'Invalid MAC address format!\n'
-                    pass
-                if not everything['right_username']:
-                    msg += 'Invalid username!\n'
-                if not everything['right_name']:
-                    msg += 'You entered invalid values for your name!\n'
-            self.popup_msg('Errors in your form', msg)
-    # Handle any exception we might've forgotten
 
     def find_and_send_keys(self, xpath, keys_to_send):
         textbox = WebDriverWait(self.browser, 10).until(
@@ -190,7 +156,7 @@ class MainWindow(QMainWindow):
             login_button.click()
             self.browser.refresh()
         except NoSuchElementException:
-            self.popup_msg("Unable to login. Something has changed on the website")
+            self.signals.popup_signal.emit("Error", "Unable to login. Something has changed on the website")
 
     def find_user(self):
         users_button_xpath = '//*[@id="topMenuBar"]/ul/li[2]/a'
@@ -251,10 +217,134 @@ class MainWindow(QMainWindow):
         self.find_and_send_keys(sponsor_textbox, self.sponsor)
         self.find_and_click(submit_button)
 
+
+class MainWindow(QMainWindow):
+    def __init__(self):
+        super(MainWindow, self).__init__()
+        self.thread_pool = QThreadPool()
+        self.ui = uic.loadUi(_UI, self)
+        self.config = configparser.RawConfigParser()
+        self.center()
+        self.mw = windows.ModernWindow(self)
+        self.dark_mode_icon = QIcon('night_mode.ico')
+        self.light_mode_icon = QIcon('light_mode.ico')
+        self.username = None
+        self.mac_address = None
+        self.device_type = None
+        self.sponsor = None
+
+        try:
+            # Open our config file and load configs if applicable
+            with open(_config, 'r') as config_file:
+                if os.path.getsize(_config):
+                    self.config.read_file(config_file)
+                    self.dark_mode_on = self.config.getboolean('Default', 'dark_mode')
+
+                    if self.config.getboolean('Default', 'dark_mode'):
+                        self.ui.change_mode.setIconSize(QSize(42, 42))
+                        self.ui.change_mode.setIcon(self.light_mode_icon)
+                        styles.dark_mode(QApplication.instance())
+                        self.ui.change_mode.setToolTip("<i><b>Light Mode</b></i>")
+                    else:
+                        self.ui.change_mode.setIconSize(QSize(28, 28))
+                        self.ui.change_mode.setIcon(self.dark_mode_icon)
+                        styles.light_mode(QApplication.instance())
+                        self.ui.change_mode.setToolTip("<i><b>Dark Mode</b></i>")
+                else:
+                    raise FileNotFoundError
+        except FileNotFoundError:
+            # Create config file if no config found
+            self.config.add_section('Default')
+            self.config['Default']['sponsor'] = ''
+            self.config['Default']['dark_mode'] = 'true'
+            self.ui.change_mode.setIcon(self.light_mode_icon)
+            self.ui.change_mode.setIconSize(QSize(42, 42))
+            self.ui.change_mode.setIcon(self.light_mode_icon)
+            styles.dark_mode(QApplication.instance())
+            self.ui.change_mode.setToolTip("<i><b>Light Mode</b></i>")
+
+            with open(_config, 'w') as config_file:
+                self.config.write(config_file)
+
+        self.mw.show()
+
+    def play_gif(self):
+        gif_path = join(dirname(abspath(__file__)), 'batman.gif')
+        loading_gif = self.QtGui.QMovie(gif_path)
+
+        self.ui.label_7.setMovie(loading_gif)
+        self.ui.label_7.setScaledContents(True)
+        loading_gif.start()
+
+    def disable_widgets(self):
+        pass
+
+    # Function to display an error if we get one
+    def popup_msg(self, title, error_string):
+        QMessageBox.about(self, title, error_string)
+
+    # Center our application instead of putting it in the top left
+    def center(self):
+        frame_gm = self.frameGeometry()
+        screen = QApplication.desktop().screenNumber(QApplication.desktop().cursor().pos())
+        center_point = QApplication.desktop().screenGeometry(screen).center()
+        frame_gm.moveCenter(center_point)
+        self.move(frame_gm.topLeft())
+
+    def clear_textboxes(self):
+        self.ui.lineEdit.clear()
+        self.ui.lineEdit_2.clear()
+        self.ui.lineEdit_3.clear()
+        self.ui.lineEdit_4.clear()
+
+    def change_ui(self):
+        with open(_config, 'r'):
+            if self.config.getboolean('Default', 'dark_mode'):
+                styles.light_mode(QApplication.instance())
+                self.ui.change_mode.setIcon(self.dark_mode_icon)
+                self.ui.change_mode.setIconSize(QSize(23, 23))
+                self.ui.change_mode.setToolTip("<i><b>Dark Mode</b></i>")
+                with open(_config, 'w') as config:
+                    self.config['Default']['dark_mode'] = 'false'
+                    self.config.write(config)
+            else:
+                styles.dark_mode(QApplication.instance())
+                self.ui.change_mode.setIcon(self.light_mode_icon)
+                self.ui.change_mode.setIconSize(QSize(42, 42))
+                self.ui.change_mode.setToolTip("<i><b>Light Mode</b></i>")
+                with open(_config, 'w') as config:
+                    self.config['Default']['dark_mode'] = 'true'
+                    self.config.write(config)
+
+    @Slot()
+    def on_change_mode_clicked(self):
+        self.change_ui()
+
+    def show_splash(self):
+        pass
+        # splash_pix = QPixmap('img-test.jpg')
+        # splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+        # splash.setMask(splash_pix.mask())
+        # splash.show()
+        # app.processEvents()
+        #
+        # splash.finish(self)
+
     # When the button is clicked
     @Slot()
     def on_pushButton_clicked(self):
-        self.visit_site()
+        # Get the texts entered in the textbox and pass them to the thread
+        self.username = self.ui.lineEdit.text()
+        self.mac_address = self.ui.lineEdit_2.text()
+        self.device_type = self.ui.lineEdit_3.text()
+        self.sponsor = self.ui.lineEdit_4.text()
+
+        registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor)
+        registration_thread.signals.clear_textboxes_signal.connect(self.clear_textboxes)
+        registration_thread.signals.disable_widgets_signal.connect(self.disable_widgets)
+        registration_thread.signals.popup_signal.connect(self.popup_msg)
+
+        self.thread_pool.start(registration_thread)
 
     # If the user clicks the red button to exit the window
     @Slot()
@@ -265,7 +355,6 @@ class MainWindow(QMainWindow):
         # if they reply yes, exit window
         if reply == QMessageBox.Yes:
             event.accept()
-            self.browser.quit()
         # if they reply no, stay where you are
         else:
             event.ignore()
@@ -273,9 +362,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-
-    qtmodern.styles.dark(app)
-    mw = qtmodern.windows.ModernWindow(MainWindow())
-    mw.show()
-
+    app.setStyle('Fusion')
+    app.setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }")
+    window = MainWindow()
     sys.exit(app.exec_())
