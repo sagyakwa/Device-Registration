@@ -21,50 +21,11 @@
    <bool>true</bool>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QLabel" name="label_2">
-    <property name="geometry">
-     <rect>
-      <x>70</x>
-      <y>100</y>
-      <width>161</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:16pt; font-style:italic; color:#ff0000;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:16pt; font-style:italic; color:#000000;&quot;&gt;Mac Address:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_3">
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>150</y>
-      <width>161</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:16pt; color:#000000;&quot;&gt;Device Type:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
-   </widget>
-   <widget class="QLabel" name="label_4">
-    <property name="geometry">
-     <rect>
-      <x>80</x>
-      <y>200</y>
-      <width>161</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:16pt; color:#000000;&quot;&gt;Your name:&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
-   </widget>
    <widget class="QPushButton" name="pushButton">
     <property name="geometry">
      <rect>
       <x>230</x>
-      <y>270</y>
+      <y>260</y>
       <width>141</width>
       <height>31</height>
      </rect>
@@ -79,7 +40,7 @@
      <string>Register</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit">
+   <widget class="QLineEdit" name="username_textbox">
     <property name="geometry">
      <rect>
       <x>250</x>
@@ -95,7 +56,7 @@
      <set>Qt::ImhLowercaseOnly</set>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit_2">
+   <widget class="QLineEdit" name="mac_textbox">
     <property name="geometry">
      <rect>
       <x>250</x>
@@ -108,7 +69,7 @@
      <string notr="true">font: 12pt &quot;Verdana&quot;;</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit_3">
+   <widget class="QLineEdit" name="device_textbox">
     <property name="geometry">
      <rect>
       <x>250</x>
@@ -121,7 +82,7 @@
      <string notr="true">font: 12pt &quot;Verdana&quot;;</string>
     </property>
    </widget>
-   <widget class="QLineEdit" name="lineEdit_4">
+   <widget class="QLineEdit" name="sponsor_textbox">
     <property name="geometry">
      <rect>
       <x>250</x>
@@ -134,11 +95,11 @@
      <string notr="true">font: 12pt &quot;Verdana&quot;;</string>
     </property>
    </widget>
-   <widget class="QLabel" name="label_5">
+   <widget class="QLabel" name="progress_label">
     <property name="geometry">
      <rect>
-      <x>90</x>
-      <y>300</y>
+      <x>110</x>
+      <y>310</y>
       <width>381</width>
       <height>51</height>
      </rect>
@@ -153,29 +114,13 @@
      <set>Qt::AlignCenter</set>
     </property>
    </widget>
-   <widget class="QLabel" name="label_6">
-    <property name="geometry">
-     <rect>
-      <x>260</x>
-      <y>0</y>
-      <width>121</width>
-      <height>41</height>
-     </rect>
-    </property>
-    <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; font-size:12pt; color:#ff0000;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:12pt; color:#ffffff;&quot;&gt; = Required&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-    </property>
-    <property name="openExternalLinks">
-     <bool>false</bool>
-    </property>
-   </widget>
    <widget class="QPushButton" name="change_mode">
     <property name="geometry">
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>31</width>
-      <height>31</height>
+      <width>25</width>
+      <height>25</height>
      </rect>
     </property>
     <property name="text">
@@ -185,10 +130,10 @@
    <widget class="QLabel" name="username_label">
     <property name="geometry">
      <rect>
-      <x>100</x>
-      <y>60</y>
+      <x>110</x>
+      <y>50</y>
       <width>121</width>
-      <height>21</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="styleSheet">
@@ -198,21 +143,97 @@
      <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt;Username&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="buddy">
-     <cstring>sides_dropdown</cstring>
+     <cstring>username_textbox</cstring>
     </property>
    </widget>
-   <zorder>lineEdit</zorder>
-   <zorder>label_2</zorder>
-   <zorder>label_3</zorder>
-   <zorder>label_4</zorder>
+   <widget class="QLabel" name="mac_address_label">
+    <property name="geometry">
+     <rect>
+      <x>80</x>
+      <y>100</y>
+      <width>151</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 16pt &quot;Verdana&quot;;</string>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;span style=&quot; color:#ff0000;&quot;&gt;*&lt;/span&gt;Mac Address&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+    <property name="buddy">
+     <cstring>mac_textbox</cstring>
+    </property>
+   </widget>
+   <widget class="QLabel" name="device_label">
+    <property name="geometry">
+     <rect>
+      <x>100</x>
+      <y>150</y>
+      <width>151</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 16pt &quot;Verdana&quot;;</string>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Device type&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+    <property name="buddy">
+     <cstring>device_textbox</cstring>
+    </property>
+   </widget>
+   <widget class="QLabel" name="sponsor_label">
+    <property name="geometry">
+     <rect>
+      <x>110</x>
+      <y>200</y>
+      <width>151</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 16pt &quot;Verdana&quot;;</string>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Your name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+    <property name="buddy">
+     <cstring>sponsor_textbox</cstring>
+    </property>
+   </widget>
+   <widget class="QLabel" name="instruction_label">
+    <property name="geometry">
+     <rect>
+      <x>200</x>
+      <y>0</y>
+      <width>151</width>
+      <height>31</height>
+     </rect>
+    </property>
+    <property name="styleSheet">
+     <string notr="true">font: 8pt &quot;Verdana&quot;;</string>
+    </property>
+    <property name="text">
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:11pt; color:#ff0000;&quot;&gt;*&lt;/span&gt;&lt;span style=&quot; font-size:11pt;&quot;&gt; = Required&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <zorder>username_textbox</zorder>
    <zorder>pushButton</zorder>
-   <zorder>lineEdit_2</zorder>
-   <zorder>lineEdit_3</zorder>
-   <zorder>lineEdit_4</zorder>
-   <zorder>label_5</zorder>
-   <zorder>label_6</zorder>
+   <zorder>mac_textbox</zorder>
+   <zorder>device_textbox</zorder>
+   <zorder>sponsor_textbox</zorder>
+   <zorder>progress_label</zorder>
    <zorder>change_mode</zorder>
    <zorder>username_label</zorder>
+   <zorder>mac_address_label</zorder>
+   <zorder>device_label</zorder>
+   <zorder>sponsor_label</zorder>
+   <zorder>instruction_label</zorder>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -227,15 +248,12 @@
     <property name="title">
      <string>Menu</string>
     </property>
-    <addaction name="separator"/>
     <addaction name="actionAdd_user_using_website"/>
-    <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="separator"/>
     <addaction name="actionAbout"/>
     <addaction name="separator"/>
     <addaction name="actionHelp"/>
@@ -267,75 +285,75 @@
   </action>
  </widget>
  <tabstops>
-  <tabstop>lineEdit</tabstop>
-  <tabstop>lineEdit_2</tabstop>
-  <tabstop>lineEdit_3</tabstop>
-  <tabstop>lineEdit_4</tabstop>
+  <tabstop>username_textbox</tabstop>
+  <tabstop>mac_textbox</tabstop>
+  <tabstop>device_textbox</tabstop>
+  <tabstop>sponsor_textbox</tabstop>
   <tabstop>pushButton</tabstop>
  </tabstops>
  <resources/>
  <connections>
   <connection>
-   <sender>lineEdit</sender>
+   <sender>username_textbox</sender>
    <signal>returnPressed()</signal>
    <receiver>pushButton</receiver>
    <slot>animateClick()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>312</x>
-     <y>116</y>
+     <y>101</y>
     </hint>
     <hint type="destinationlabel">
      <x>297</x>
-     <y>338</y>
+     <y>321</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>lineEdit_2</sender>
+   <sender>mac_textbox</sender>
    <signal>returnPressed()</signal>
    <receiver>pushButton</receiver>
    <slot>animateClick()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>331</x>
-     <y>162</y>
+     <y>151</y>
     </hint>
     <hint type="destinationlabel">
      <x>278</x>
-     <y>345</y>
+     <y>321</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>lineEdit_3</sender>
+   <sender>device_textbox</sender>
    <signal>returnPressed()</signal>
    <receiver>pushButton</receiver>
    <slot>animateClick()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>393</x>
-     <y>216</y>
+     <y>201</y>
     </hint>
     <hint type="destinationlabel">
      <x>243</x>
-     <y>335</y>
+     <y>321</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>lineEdit_4</sender>
+   <sender>sponsor_textbox</sender>
    <signal>returnPressed()</signal>
    <receiver>pushButton</receiver>
    <slot>animateClick()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>421</x>
-     <y>265</y>
+     <y>251</y>
     </hint>
     <hint type="destinationlabel">
      <x>286</x>
-     <y>348</y>
+     <y>321</y>
     </hint>
    </hints>
   </connection>
