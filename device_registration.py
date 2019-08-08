@@ -49,7 +49,7 @@ class RegisterThread(QRunnable):
         self.device_type = device_type
         self.sponsor = sponsor
         self.options = Options()
-        self.options.headless = False  # True to make headless, False to make browser visible
+        self.options.headless = True  # True to make headless, False to make browser visible
 
     def run(self):
         # Make dictionary to check whether format of text boxes are correct
@@ -65,6 +65,7 @@ class RegisterThread(QRunnable):
             self.signals.disable_widgets_signal.emit(True)
             self.browser = webdriver.Chrome(options=self.options)
             # go to the homepage
+            self.signals.label_update_signal.emit("Starting...")
             self.browser.get('http://fsunac-1.framingham.edu/administration')
             self.login()
             try:
@@ -88,8 +89,8 @@ class RegisterThread(QRunnable):
                     self.add_device()
                     self.signals.label_update_signal.emit("Done!")
                     self.browser.quit()
-                    self.clear_textboxes()
-                    self.signals.disable_widgets_signal(False)
+                    self.signals.clear_textboxes_signal.emit()
+                    self.signals.disable_widgets_signal.emit(False)
                     self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been '
                     f'registered\nwith the following '
                     f'MAC Address: {self.mac_address}')
