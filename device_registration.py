@@ -6,7 +6,7 @@ from datetime import datetime
 from os.path import join, dirname, abspath
 
 import yaml
-from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool
+from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QSplashScreen, QPushButton, QLineEdit
 from PyQt5 import QtGui
@@ -37,7 +37,7 @@ class Signals(QObject):
 
 
 class RegisterThread(QRunnable):
-    def __init__(self, username, mac_address, device_type, sponsor):
+    def __init__(self, username, mac_address, device_type, sponsor, user_type='student'):
         super(RegisterThread, self).__init__()
         self.signals = Signals()
         credential_location = join(dirname(abspath(__file__)), 'credentials')
@@ -48,6 +48,7 @@ class RegisterThread(QRunnable):
         self.mac_address = mac_address
         self.device_type = device_type
         self.sponsor = sponsor
+        self.user_type = user_type
         self.options = Options()
         self.options.headless = True  # True to make headless, False to make browser visible
 
@@ -110,7 +111,7 @@ class RegisterThread(QRunnable):
                     msg += 'Invalid username!\n'
                 if not everything['right_name']:
                     msg += 'You entered invalid values for your name!\n'
-            self.signals.disable_widgets_signal(False)
+            self.signals.disable_widgets_signal.emit(False)
             self.signals.popup_signal.emit('Errors in your form', msg)
 
     # Check to see if mac address is valid format eg. (00:00:00:00:00:000 or (00-00-00-00-00-00)
@@ -200,7 +201,12 @@ class RegisterThread(QRunnable):
         self.find_and_click(users_button_xpath)
         self.find_and_click(add_user_button)
         self.find_and_send_keys(username_textbox, self.username)
-        self.find_and_send_keys(email_textbox, f"{self.username}@student.framingham/edu")
+        if self.user_type == 'student':
+            self.find_and_send_keys(email_textbox, f"{self.username}@student.framingham.edu")
+        elif self.user_type == 'faculty':
+            self.find_and_send_keys(email_textbox, f"{self.username}@framingham.edu")
+        else:
+            self.find_and_send_keys(email_textbox, self.user_type)
         self.find_and_send_keys(start_time_textbox, registration_start_date)
         self.find_and_send_keys(expires_time_textbox, registration_end_date)
         self.find_and_send_keys(sponsor_textbox, self.sponsor)
@@ -239,10 +245,14 @@ class MainWindow(QMainWindow):
         self.light_mode_icon = QIcon('light_mode.ico')
         self.ui.actionAbout.triggered.connect(self.show_about)
         self.ui.actionHelp.triggered.connect(self.show_help)
+        self.ui.student_checkbox.stateChanged.connect(self.onStateChange)
+        self.ui.faculty_checkbox.stateChanged.connect(self.onStateChange)
+        self.ui.other_checkbox.stateChanged.connect(self.onStateChange)
         self.username = None
         self.mac_address = None
         self.device_type = None
         self.sponsor = None
+        self.user_type = 'student'
 
         try:
             # Open our config file and load configs if applicable
@@ -258,7 +268,7 @@ class MainWindow(QMainWindow):
                         styles.dark_mode(QApplication.instance())
                         self.ui.change_mode.setToolTip("<i><b>Light Mode</b></i>")
                     else:
-                        self.ui.change_mode.setIconSize(QSize(28, 28))
+                        self.ui.change_mode.setIconSize(QSize(25, 25))
                         self.ui.change_mode.setIcon(self.dark_mode_icon)
                         styles.light_mode(QApplication.instance())
                         self.ui.change_mode.setToolTip("<i><b>Dark Mode</b></i>")
@@ -289,6 +299,29 @@ class MainWindow(QMainWindow):
                 else:
                     child.setEnabled(True)
 
+    @pyqtSlot(int)
+    def onStateChange(self, state):
+        if state == Qt.Checked:
+            print("is checked")
+            if self.sender() == self.ui.student_checkbox:
+                self.user_type = 'student'
+                self.ui.faculty_checkbox.setChecked(False)
+                self.ui.other_checkbox.setChecked(False)
+            elif self.sender() == self.ui.faculty_checkbox:
+                self.user_type = 'faculty'
+                self.ui.student_checkbox.setChecked(False)
+                self.ui.other_checkbox.setChecked(False)
+            elif self.sender() == self.ui.other_checkbox:
+                self.user_type = 'other'  # shpuld be a new textbox value textbox
+                self.ui.student_checkbox.setChecked(False)
+                self.ui.faculty_checkbox.setChecked(False)
+        else:
+            if not self.ui.student_checkbox.isChecked() and not self.ui.faculty_checkbox.isChecked() and not self.ui.other_checkbox.isChecked():
+                print("stu checked bc none checked")
+                self.ui.student_checkbox.setChecked(True)
+            elif self.ui.student_checkbox.isChecked() and not self.ui.faculty_checkbox.isChecked() and not self.ui.other_checkbox.isChecked():
+                print("recurs")
+
     # Function to display an error if we get one
     def popup_msg(self, title, error_string):
         QMessageBox.about(self, title, error_string)
@@ -312,7 +345,7 @@ class MainWindow(QMainWindow):
             if self.config.getboolean('Default', 'dark_mode'):
                 styles.light_mode(QApplication.instance())
                 self.ui.change_mode.setIcon(self.dark_mode_icon)
-                self.ui.change_mode.setIconSize(QSize(23, 23))
+                self.ui.change_mode.setIconSize(QSize(25, 25))
                 self.ui.change_mode.setToolTip("<i><b>Dark Mode</b></i>")
                 with open(_config, 'w') as config:
                     self.config['Default']['dark_mode'] = 'false'
@@ -320,7 +353,7 @@ class MainWindow(QMainWindow):
             else:
                 styles.dark_mode(QApplication.instance())
                 self.ui.change_mode.setIcon(self.light_mode_icon)
-                self.ui.change_mode.setIconSize(QSize(42, 42))
+                self.ui.change_mode.setIconSize(QSize(35, 35))
                 self.ui.change_mode.setToolTip("<i><b>Light Mode</b></i>")
                 with open(_config, 'w') as config:
                     self.config['Default']['dark_mode'] = 'true'
@@ -353,14 +386,14 @@ class MainWindow(QMainWindow):
 
     # When the button is clicked
     @Slot()
-    def on_pushButton_clicked(self):
+    def on_register_button_clicked(self):
         # Get the texts entered in the textbox and pass them to the thread
         self.username = self.ui.username_textbox.text()
         self.mac_address = self.ui.mac_textbox.text()
         self.device_type = self.ui.device_textbox.text()
         self.sponsor = self.ui.sponsor_textbox.text()
 
-        registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor)
+        registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor, user_type=self.user_type)
         registration_thread.signals.clear_textboxes_signal.connect(self.clear_textboxes)
         registration_thread.signals.disable_widgets_signal.connect(self.disable_widgets)
         registration_thread.signals.popup_signal.connect(self.popup_msg)
