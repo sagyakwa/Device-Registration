@@ -1,6 +1,9 @@
 <h1>Device Registration v1.0</h1>
 
-<p><font size="4">An application to add devices to the network via MAC address</font></p>
+<p><font size="5">An application to add devices to the network via MAC address</font></p>
+
+<h1>Author</h1>
+<p><font size="5">Samuel Agyakwa</font></p>
 
 <h1>License</h1>
-<p><font size="4">Don't do bad/reckless/irresponsible things with this</font></p>
+<p><font size="5">Don't do bad/reckless/irresponsible things with this</font></p>
