@@ -2,6 +2,7 @@ import configparser
 import os
 import re
 import sys
+import webbrowser
 from datetime import datetime
 from os.path import join, dirname, abspath
 
@@ -50,7 +51,7 @@ class RegisterThread(QRunnable):
         self.sponsor = sponsor
         self.user_type = user_type
         self.options = Options()
-        self.options.headless = True  # True to make headless, False to make browser visible
+        self.options.headless = False  # True to make headless, False to make browser visible
 
     def run(self):
         # Make dictionary to check whether format of text boxes are correct
@@ -91,10 +92,10 @@ class RegisterThread(QRunnable):
             self.signals.popup_signal.emit('Errors in your form', msg)
 
     def execute(self):
+        self.signals.label_update_signal.emit("Starting...")
         self.signals.disable_widgets_signal.emit(True)
         self.browser = webdriver.Chrome(options=self.options)
         # go to the homepage
-        self.signals.label_update_signal.emit("Starting...")
         self.browser.get('http://fsunac-1.framingham.edu/administration')
         self.login()
         try:
@@ -210,6 +211,8 @@ class RegisterThread(QRunnable):
         registration_end_date = f"{current_date.strftime('%m')}/{current_date.strftime('%d')}/{int(current_date.strftime('%Y')) + 2} 0:00:00"
 
         users_button_xpath = '//*[@id="topMenuBar"]/ul/li[2]/a'
+        first_name_textbox = '//*[@id="addEditUserTable"]/tbody/tr[1]/td[2]/input'
+        last_name_textbox = '//*[@id="addEditUserTable"]/tbody/tr[3]/td[2]/input'
         add_user_button = '//*[@id="showUsersAdd"]'
         username_textbox = '//*[@id="addEditUserTable"]/tbody/tr[4]/td[2]/input'
         email_textbox = '//*[@id="addEditUserTable"]/tbody/tr[5]/td[2]/input'
@@ -221,12 +224,20 @@ class RegisterThread(QRunnable):
 
         self.find_and_click(users_button_xpath)
         self.find_and_click(add_user_button)
-        self.find_and_send_keys(username_textbox, self.username)
         if self.user_type == 'student':
+            self.find_and_send_keys(username_textbox, self.username)
             self.find_and_send_keys(email_textbox, f"{self.username}@student.framingham.edu")
         elif self.user_type == 'faculty':
+            self.find_and_send_keys(username_textbox, self.username)
             self.find_and_send_keys(email_textbox, f"{self.username}@framingham.edu")
         else:
+            self.find_and_send_keys(username_textbox, self.username)
+            name = list(self.username.split())
+            try:
+                self.find_and_send_keys(first_name_textbox, name[0])
+                self.find_and_send_keys(last_name_textbox, name[1])
+            except IndexError:
+                pass
             self.find_and_send_keys(email_textbox, self.user_type)
         self.find_and_send_keys(start_time_textbox, registration_start_date)
         self.find_and_send_keys(expires_time_textbox, registration_end_date)
@@ -266,9 +277,10 @@ class MainWindow(QMainWindow):
         self.light_mode_icon = QIcon('light_mode.ico')
         self.ui.actionAbout.triggered.connect(self.show_about)
         self.ui.actionHelp.triggered.connect(self.show_help)
-        self.ui.student_checkbox.stateChanged.connect(self.onStateChange)
-        self.ui.faculty_checkbox.stateChanged.connect(self.onStateChange)
-        self.ui.other_checkbox.stateChanged.connect(self.onStateChange)
+        self.ui.actionAdd_user_using_website.triggered.connect(lambda: webbrowser.open_new_tab('http://fsunac-1.framingham.edu/administration'))
+        self.ui.student_checkbox.stateChanged.connect(self.on_state_change)
+        self.ui.faculty_checkbox.stateChanged.connect(self.on_state_change)
+        self.ui.other_checkbox.stateChanged.connect(self.on_state_change)
         self.username = None
         self.mac_address = None
         self.device_type = None
@@ -324,12 +336,13 @@ class MainWindow(QMainWindow):
         if other_checked:
             self.ui.username_label.setText(
                 '<html><head/><body><p><span style=" color:#ff0000;">*</span>Full Name</p></body></html>')
-            self.ui.progress_label.move(250, 360)
+            self.ui.progress_label.move(160, 360)
             self.ui.register_button.move(230, 330)
-            self.ui.sponsor_label.setGeometry(110, 265, 151, 41)
+            self.ui.sponsor_label.setGeometry(95, 265, 151, 41)
             self.ui.sponsor_textbox.move(250, 278)
 
-            self.email_label = QLabel('<html><head/><body><p><span style=" color:#ff0000;">*</span>User Email</p></body></html>', self)
+            self.email_label = QLabel('<html><head/><body><p><span style=" color:#ff0000;">*</span>User '
+                                      'Email</p></body></html>', self)
             self.email_label.setStyleSheet('font: 16pt "Verdana";')
             self.email_label.setGeometry(94, 230, 151, 61)
             self.email_textbox = QLineEdit(self)
@@ -342,9 +355,9 @@ class MainWindow(QMainWindow):
                     '<html><head/><body><p><span style=" color:#ff0000;">*</span>Username</p></body></html>')
                 self.email_textbox.deleteLater()
                 self.email_label.deleteLater()
-                self.ui.progress_label.move(250, 310)
+                self.ui.progress_label.move(160, 310)
                 self.ui.register_button.move(230, 280)
-                self.ui.sponsor_label.setGeometry(110, 220, 151, 41)
+                self.ui.sponsor_label.setGeometry(95, 220, 151, 41)
                 self.ui.sponsor_textbox.move(250, 230)
             except AttributeError:
                 pass
@@ -352,7 +365,7 @@ class MainWindow(QMainWindow):
                 pass
 
     @pyqtSlot(int)
-    def onStateChange(self, state):
+    def on_state_change(self, state):
         if state == Qt.Checked:
             if self.sender() == self.ui.student_checkbox:
                 self.other_checked(other_checked=False)
@@ -390,6 +403,10 @@ class MainWindow(QMainWindow):
         self.ui.username_textbox.clear()
         self.ui.mac_textbox.clear()
         self.ui.device_textbox.clear()
+        try:
+            self.ui.email_textbox.clear()
+        except RuntimeError:
+            pass
         # self.ui.sponsor_textbox.clear()
 
     def change_ui(self):
