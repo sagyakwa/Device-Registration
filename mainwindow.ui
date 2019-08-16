@@ -36,6 +36,9 @@
     <property name="autoFillBackground">
      <bool>true</bool>
     </property>
+    <property name="styleSheet">
+     <string notr="true">font: 12pt &quot;MS Shell Dlg 2&quot;;</string>
+    </property>
     <property name="text">
      <string>Register</string>
     </property>
@@ -98,9 +101,9 @@
    <widget class="QLabel" name="progress_label">
     <property name="geometry">
      <rect>
-      <x>110</x>
-      <y>330</y>
-      <width>381</width>
+      <x>250</x>
+      <y>310</y>
+      <width>101</width>
       <height>51</height>
      </rect>
     </property>
@@ -187,7 +190,7 @@
    <widget class="QLabel" name="sponsor_label">
     <property name="geometry">
      <rect>
-      <x>110</x>
+      <x>80</x>
       <y>220</y>
       <width>151</width>
       <height>41</height>
@@ -345,6 +348,10 @@
   </action>
  </widget>
  <tabstops>
+  <tabstop>change_mode</tabstop>
+  <tabstop>student_checkbox</tabstop>
+  <tabstop>faculty_checkbox</tabstop>
+  <tabstop>other_checkbox</tabstop>
   <tabstop>username_textbox</tabstop>
   <tabstop>mac_textbox</tabstop>
   <tabstop>device_textbox</tabstop>
