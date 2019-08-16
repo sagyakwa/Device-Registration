@@ -7,9 +7,8 @@ from os.path import join, dirname, abspath
 
 import yaml
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot
-from PyQt5.QtGui import QPixmap, QIcon
-from PyQt5.QtWidgets import QSplashScreen, QPushButton, QLineEdit
-from PyQt5 import QtGui
+from PyQt5.QtGui import QIcon
+from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -20,6 +19,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
+
 from modern_ui import styles
 from modern_ui import windows
 
@@ -61,45 +61,16 @@ class RegisterThread(QRunnable):
             'right_name': bool(self.check_sponsor(self.sponsor))
         }
 
+        if self.user_type != 'student' and self.user_type != 'faculty':
+            everything.update(correct_email=bool(self.check_email(self.user_type)))
+            everything.update(right_username=bool(self.check_username(self.username, other_user=True)))
+
         # Check to see that there is some text in the Text boxes and it is correctly formatted
         if all(everything.values()):
-            self.signals.disable_widgets_signal.emit(True)
-            self.browser = webdriver.Chrome(options=self.options)
-            # go to the homepage
-            self.signals.label_update_signal.emit("Starting...")
-            self.browser.get('http://fsunac-1.framingham.edu/administration')
-            self.login()
-            try:
-                self.signals.label_update_signal.emit("Finding user...")
-                if self.find_user():
-                    self.signals.label_update_signal.emit("User found")
-                    self.signals.label_update_signal.emit("Adding device...")
-                    self.add_device()
-                    self.signals.label_update_signal.emit("Done!")
-                    self.browser.quit()
-                    self.signals.clear_textboxes_signal.emit()
-                    self.signals.disable_widgets_signal.emit(False)
-                    self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been '
-                    f'registered\nwith the following MAC Address: {self.mac_address}')
-                    self.signals.label_update_signal.emit("Ready")
-                else:
-                    self.signals.label_update_signal.emit("User not found creating new user")
-                    self.create_new_user()
-                    self.find_user()
-                    self.signals.label_update_signal.emit("Adding device...")
-                    self.add_device()
-                    self.signals.label_update_signal.emit("Done!")
-                    self.browser.quit()
-                    self.signals.clear_textboxes_signal.emit()
-                    self.signals.disable_widgets_signal.emit(False)
-                    self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been '
-                    f'registered\nwith the following '
-                    f'MAC Address: {self.mac_address}')
-                    self.signals.label_update_signal.emit("Ready")
-            except TimeoutException:
-                self.signals.popup_signal.emit('Errors in yout form', 'Check your internet connect \n and make sure '
-                                                                      'you are connected to FSU\'s network')
+            self.execute()
         else:
+            # if self.user_type != 'student' or self.user_type != 'faculty':
+            #     everything.update(correct_email=bool(self.check_email(self.user_type)))
             # Go through the dictionary and give appropriate error messages if it turns out something is wrong
             for _ in everything:
                 global msg
@@ -111,23 +82,73 @@ class RegisterThread(QRunnable):
                     msg += 'Invalid username!\n'
                 if not everything['right_name']:
                     msg += 'You entered invalid values for your name!\n'
+                try:
+                    if not everything['correct_email']:
+                        msg += 'Invalid email address!\n'
+                except KeyError:
+                    pass
             self.signals.disable_widgets_signal.emit(False)
             self.signals.popup_signal.emit('Errors in your form', msg)
+
+    def execute(self):
+        self.signals.disable_widgets_signal.emit(True)
+        self.browser = webdriver.Chrome(options=self.options)
+        # go to the homepage
+        self.signals.label_update_signal.emit("Starting...")
+        self.browser.get('http://fsunac-1.framingham.edu/administration')
+        self.login()
+        try:
+            self.signals.label_update_signal.emit("Finding user...")
+            if self.find_user():
+                self.signals.label_update_signal.emit("User found")
+                self.signals.label_update_signal.emit("Adding device...")
+                self.add_device()
+                self.signals.label_update_signal.emit("Done!")
+                self.browser.quit()
+                self.signals.clear_textboxes_signal.emit()
+                self.signals.disable_widgets_signal.emit(False)
+                self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been '
+                f'registered\nwith the following MAC Address: {self.mac_address}')
+                self.signals.label_update_signal.emit("Ready")
+            else:
+                self.signals.label_update_signal.emit("User not found creating new user")
+                self.create_new_user()
+                self.find_user()
+                self.signals.label_update_signal.emit("Adding device...")
+                self.add_device()
+                self.signals.label_update_signal.emit("Done!")
+                self.browser.quit()
+                self.signals.clear_textboxes_signal.emit()
+                self.signals.disable_widgets_signal.emit(False)
+                self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been '
+                f'registered\nwith the following '
+                f'MAC Address: {self.mac_address}')
+                self.signals.label_update_signal.emit("Ready")
+        except TimeoutException:
+            self.signals.popup_signal.emit('Errors in your form', 'Check your internet connect \n and make sure '
+                                                                  'you are connected to FSU\'s network')
 
     # Check to see if mac address is valid format eg. (00:00:00:00:00:000 or (00-00-00-00-00-00)
     @staticmethod
     def check_mac_address(mac_address):
-        return bool(re.match('[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address.lower()))
+        return bool(re.match('[0-9a-f]{2}([-:]?)[0-9a-f]{2}(\\1[0-9a-f]{2}){4}$', mac_address))
 
     # Check to see if username is correct format eg. (teststudent) or (teststudent45) but not (test student)
     @staticmethod
-    def check_username(username):
-        return bool(re.match(r'[a-zA-Z]{1,}', username.lower()) or (
-                re.match(r'[a-zA-Z]{1,}', username.lower()) and username.endswith(re.match(r'[0-9]{1,}'))))
+    def check_username(username, other_user=False):
+        if other_user:
+            return True
+        else:
+            return bool(re.match(r'[a-zA-Z]{1,}', username.lower()) or (
+                    re.match(r'[a-zA-Z]{1,}', username.lower()) and username.endswith(re.match(r'[0-9]{1,}'))))
 
     @staticmethod
     def check_sponsor(your_name):
         return bool(re.match(r'[a-zA-Z]{1,}(.*[\s]?)', your_name.lower()))
+
+    @staticmethod
+    def check_email(email):
+        return bool(re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email.lower()))
 
     def find_and_send_keys(self, xpath, keys_to_send):
         textbox = WebDriverWait(self.browser, 10).until(
@@ -299,28 +320,59 @@ class MainWindow(QMainWindow):
                 else:
                     child.setEnabled(True)
 
+    def other_checked(self, other_checked=True):
+        if other_checked:
+            self.ui.username_label.setText(
+                '<html><head/><body><p><span style=" color:#ff0000;">*</span>Full Name</p></body></html>')
+            self.ui.progress_label.move(250, 360)
+            self.ui.register_button.move(230, 330)
+            self.ui.sponsor_label.setGeometry(110, 265, 151, 41)
+            self.ui.sponsor_textbox.move(250, 278)
+
+            self.email_label = QLabel('<html><head/><body><p><span style=" color:#ff0000;">*</span>User Email</p></body></html>', self)
+            self.email_label.setStyleSheet('font: 16pt "Verdana";')
+            self.email_label.setGeometry(94, 230, 151, 61)
+            self.email_textbox = QLineEdit(self)
+            self.email_textbox.setGeometry(250, 250, 221, 21)
+            self.email_label.show()
+            self.email_textbox.show()
+        else:
+            try:
+                self.ui.username_label.setText(
+                    '<html><head/><body><p><span style=" color:#ff0000;">*</span>Username</p></body></html>')
+                self.email_textbox.deleteLater()
+                self.email_label.deleteLater()
+                self.ui.progress_label.move(250, 310)
+                self.ui.register_button.move(230, 280)
+                self.ui.sponsor_label.setGeometry(110, 220, 151, 41)
+                self.ui.sponsor_textbox.move(250, 230)
+            except AttributeError:
+                pass
+            except RuntimeError:
+                pass
+
     @pyqtSlot(int)
     def onStateChange(self, state):
         if state == Qt.Checked:
-            print("is checked")
             if self.sender() == self.ui.student_checkbox:
+                self.other_checked(other_checked=False)
                 self.user_type = 'student'
                 self.ui.faculty_checkbox.setChecked(False)
                 self.ui.other_checkbox.setChecked(False)
             elif self.sender() == self.ui.faculty_checkbox:
+                self.other_checked(other_checked=False)
                 self.user_type = 'faculty'
                 self.ui.student_checkbox.setChecked(False)
                 self.ui.other_checkbox.setChecked(False)
             elif self.sender() == self.ui.other_checkbox:
-                self.user_type = 'other'  # shpuld be a new textbox value textbox
+                self.other_checked()
+                self.user_type = 'other'
                 self.ui.student_checkbox.setChecked(False)
                 self.ui.faculty_checkbox.setChecked(False)
         else:
             if not self.ui.student_checkbox.isChecked() and not self.ui.faculty_checkbox.isChecked() and not self.ui.other_checkbox.isChecked():
                 print("stu checked bc none checked")
                 self.ui.student_checkbox.setChecked(True)
-            elif self.ui.student_checkbox.isChecked() and not self.ui.faculty_checkbox.isChecked() and not self.ui.other_checkbox.isChecked():
-                print("recurs")
 
     # Function to display an error if we get one
     def popup_msg(self, title, error_string):
@@ -393,7 +445,10 @@ class MainWindow(QMainWindow):
         self.device_type = self.ui.device_textbox.text()
         self.sponsor = self.ui.sponsor_textbox.text()
 
-        registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor, user_type=self.user_type)
+        if self.user_type == 'other':
+            registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor, user_type=self.email_textbox.text())
+        else:
+            registration_thread = RegisterThread(self.username, self.mac_address, self.device_type, self.sponsor, user_type=self.user_type)
         registration_thread.signals.clear_textboxes_signal.connect(self.clear_textboxes)
         registration_thread.signals.disable_widgets_signal.connect(self.disable_widgets)
         registration_thread.signals.popup_signal.connect(self.popup_msg)
