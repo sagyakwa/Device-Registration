@@ -97,8 +97,8 @@ class RegisterThread(QRunnable):
         self.browser = webdriver.Chrome(options=self.options)
         # go to the homepage
         self.browser.get('http://fsunac-1.framingham.edu/administration')
-        self.login()
         try:
+            self.login()
             self.signals.label_update_signal.emit("Finding user...")
             if self.find_user():
                 self.signals.label_update_signal.emit("User found")
@@ -121,13 +121,16 @@ class RegisterThread(QRunnable):
                 self.browser.quit()
                 self.signals.clear_textboxes_signal.emit()
                 self.signals.disable_widgets_signal.emit(False)
-                self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been '
+                self.signals.popup_signal.emit('Congratulations', f'{self.username} has been '
                 f'registered\nwith the following '
                 f'MAC Address: {self.mac_address}')
                 self.signals.label_update_signal.emit("Ready")
         except TimeoutException:
             self.signals.popup_signal.emit('Errors in your form', 'Check your internet connect \n and make sure '
                                                                   'you are connected to FSU\'s network')
+            self.signals.label_update_signal.emit("Ready")
+            self.signals.disable_widgets_signal.emit(False)
+            self.browser.quit()
 
     # Check to see if mac address is valid format eg. (00:00:00:00:00:000 or (00-00-00-00-00-00)
     @staticmethod
@@ -151,8 +154,8 @@ class RegisterThread(QRunnable):
     def check_email(email):
         return bool(re.match(r"(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)", email.lower()))
 
-    def find_and_send_keys(self, xpath, keys_to_send):
-        textbox = WebDriverWait(self.browser, 10).until(
+    def find_and_send_keys(self, xpath, keys_to_send, seconds=7):
+        textbox = WebDriverWait(self.browser, seconds).until(
             ec.presence_of_element_located(
                 (By.XPATH, xpath))
         )
@@ -160,8 +163,8 @@ class RegisterThread(QRunnable):
         # self.browser.execute_script(f'arguments[0].value={keys_to_send}', textbox)
         textbox.send_keys(keys_to_send)
 
-    def find_and_click(self, xpath):
-        clickable_object = WebDriverWait(self.browser, 10).until(
+    def find_and_click(self, xpath, seconds=7):
+        clickable_object = WebDriverWait(self.browser, seconds).until(
             ec.presence_of_element_located(
                 (By.XPATH, xpath)
             )
@@ -174,21 +177,16 @@ class RegisterThread(QRunnable):
         username_xpath = '//*[@id="loginTable"]/tbody/tr[1]/td[2]/input'
         password_xpath = '//*[@id="loginTable"]/tbody/tr[2]/td[2]/input'
         login_button_xpath = '//*[@id="loginTable"]/tbody/tr[4]/td[2]/input'
-        try:
-            self.find_and_send_keys(username_xpath, self.login_username)
+        self.find_and_send_keys(username_xpath, self.login_username, seconds=3)
 
-            self.find_and_send_keys(password_xpath, self.login_password)
+        self.find_and_send_keys(password_xpath, self.login_password, seconds=3)
 
-            login_button = WebDriverWait(self.browser, 6).until(
-                ec.presence_of_element_located(
-                    (By.XPATH, login_button_xpath))
-            )
-            login_button.click()
-            self.browser.refresh()
-        except NoSuchElementException:
-            self.signals.popup_signal.emit("Error", "Unable to login. Check your internet connection")
-        except TimeoutException:
-            self.signals.popup_signal.emit("Error", "Unable to login. Check your internet connection")
+        login_button = WebDriverWait(self.browser, 5).until(
+            ec.presence_of_element_located(
+                (By.XPATH, login_button_xpath))
+        )
+        login_button.click()
+
 
     def find_user(self):
         users_button_xpath = '//*[@id="topMenuBar"]/ul/li[2]/a'
@@ -196,7 +194,7 @@ class RegisterThread(QRunnable):
         search_button_xpath = '//*[@id="registrationTableForm"]/div[2]/input[2]'
         user_checkbox_xpath = '//*[@id="adminUserTable"]/tbody/tr/td[1]/input'
         self.find_and_click(users_button_xpath)
-        self.find_and_send_keys(filter_bar_xpath, self.username)
+        self.find_and_send_keys(filter_bar_xpath, self.username, seconds=5)
         self.find_and_click(search_button_xpath)
         try:
             self.browser.find_element_by_xpath(user_checkbox_xpath)
@@ -225,23 +223,23 @@ class RegisterThread(QRunnable):
         self.find_and_click(users_button_xpath)
         self.find_and_click(add_user_button)
         if self.user_type == 'student':
-            self.find_and_send_keys(username_textbox, self.username)
-            self.find_and_send_keys(email_textbox, f"{self.username}@student.framingham.edu")
+            self.find_and_send_keys(username_textbox, self.username, seconds=3)
+            self.find_and_send_keys(email_textbox, f"{self.username}@student.framingham.edu", seconds=3)
         elif self.user_type == 'faculty':
-            self.find_and_send_keys(username_textbox, self.username)
-            self.find_and_send_keys(email_textbox, f"{self.username}@framingham.edu")
+            self.find_and_send_keys(username_textbox, self.username, seconds=3)
+            self.find_and_send_keys(email_textbox, f"{self.username}@framingham.edu", seconds=3)
         else:
-            self.find_and_send_keys(username_textbox, self.username)
+            self.find_and_send_keys(username_textbox, self.username, seconds=3)
             name = list(self.username.split())
             try:
-                self.find_and_send_keys(first_name_textbox, name[0])
-                self.find_and_send_keys(last_name_textbox, name[1])
+                self.find_and_send_keys(first_name_textbox, name[0], seconds=3)
+                self.find_and_send_keys(last_name_textbox, name[1], seconds=3)
             except IndexError:
                 pass
-            self.find_and_send_keys(email_textbox, self.user_type)
-        self.find_and_send_keys(start_time_textbox, registration_start_date)
-        self.find_and_send_keys(expires_time_textbox, registration_end_date)
-        self.find_and_send_keys(sponsor_textbox, self.sponsor)
+            self.find_and_send_keys(email_textbox, self.user_type, seconds=3)
+        self.find_and_send_keys(start_time_textbox, registration_start_date, seconds=3)
+        self.find_and_send_keys(expires_time_textbox, registration_end_date, seconds=3)
+        self.find_and_send_keys(sponsor_textbox, self.sponsor, seconds=3)
         dropdown_selection = Select(self.browser.find_element_by_xpath(user_type_dropdown))
         dropdown_selection.select_by_value("Web Authentication")
         self.find_and_click(submit_button)
@@ -384,7 +382,6 @@ class MainWindow(QMainWindow):
                 self.ui.faculty_checkbox.setChecked(False)
         else:
             if not self.ui.student_checkbox.isChecked() and not self.ui.faculty_checkbox.isChecked() and not self.ui.other_checkbox.isChecked():
-                print("stu checked bc none checked")
                 self.ui.student_checkbox.setChecked(True)
 
     # Function to display an error if we get one
