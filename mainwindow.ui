@@ -317,9 +317,9 @@
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="actionAbout"/>
-    <addaction name="separator"/>
     <addaction name="actionHelp"/>
+    <addaction name="separator"/>
+    <addaction name="actionAbout"/>
     <addaction name="separator"/>
    </widget>
    <addaction name="menuMenu"/>
