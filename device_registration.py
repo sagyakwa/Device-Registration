@@ -27,6 +27,7 @@ from modern_ui import windows
 
 _UI = join(dirname(abspath(__file__)), 'mainwindow.ui')
 _gif = join(dirname(abspath(__file__)), 'cube.gif')
+_logo = join(dirname(abspath(__file__)), 'purple_flame.svg')
 _config = join(dirname(abspath(__file__)), 'config')
 _about = join(dirname(abspath(__file__)), 'about')
 _help = join(dirname(abspath(__file__)), 'help')
@@ -294,6 +295,7 @@ class MainWindow(QMainWindow):
 		self.init_config()
 
 	def initUI(self):
+		self.setWindowIcon(QIcon(_logo))
 		self.dark_mode_icon = QIcon('night_mode.ico')
 		self.light_mode_icon = QIcon('light_mode.ico')
 		self.ui.actionAbout.triggered.connect(self.show_about)
@@ -432,9 +434,9 @@ class MainWindow(QMainWindow):
 		try:
 			self.ui.email_textbox.clear()
 		except RuntimeError as r:
-			print(r)
+			pass
 		except AttributeError as a:
-			print(a)
+			pass
 
 	def change_ui(self):
 		with open(_config, 'r'):
