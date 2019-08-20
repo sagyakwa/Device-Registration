@@ -9,7 +9,8 @@ from os.path import join, dirname, abspath
 import yaml
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot
 from PyQt5.QtGui import QIcon, QMovie
-from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel
+from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel, QCheckBox, QGraphicsBlurEffect, \
+	QMenu, QMenuBar
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -54,7 +55,7 @@ class RegisterThread(QRunnable):
 		self.sponsor = sponsor
 		self.user_type = user_type
 		self.options = Options()
-		self.options.headless = False  # True to make headless, False to make browser visible
+		self.options.headless = True  # True to make headless, False to make browser visible
 
 	def run(self):
 		# Make dictionary to check whether format of text boxes are correct
@@ -289,6 +290,8 @@ class MainWindow(QMainWindow):
 		self.config = configparser.RawConfigParser()
 		self.center()
 		self.mw = windows.ModernWindow(self)
+		self.initUI()
+		self.init_config()
 
 	def initUI(self):
 		self.dark_mode_icon = QIcon('night_mode.ico')
@@ -302,7 +305,6 @@ class MainWindow(QMainWindow):
 		self.ui.other_checkbox.stateChanged.connect(self.on_state_change)
 		self.user_type = 'student'
 		self.button_clicked = False
-		self.init_config()
 		self.mw.show()
 
 	def init_config(self):
@@ -340,7 +342,7 @@ class MainWindow(QMainWindow):
 				self.config.write(config_file)
 
 	def disable_widgets(self, bool_val):
-		objects = [QPushButton, QLineEdit]
+		objects = [QPushButton, QLineEdit, QMenu, QMenuBar]
 		for item in objects:
 			for child in self.findChildren(item):
 				if bool_val:
@@ -352,8 +354,8 @@ class MainWindow(QMainWindow):
 		if other_checked:
 			self.ui.username_label.setText(
 				'<html><head/><body><p><span style=" color:#ff0000;">*</span>Full Name</p></body></html>')
-			self.ui.progress_label.move(160, 360)
-			self.ui.register_button.move(230, 330)
+			self.ui.progress_label.move(10, 355)
+			self.ui.register_button.move(230, 320)
 			self.ui.sponsor_label.setGeometry(95, 265, 151, 41)
 			self.ui.sponsor_textbox.move(250, 278)
 
@@ -363,6 +365,7 @@ class MainWindow(QMainWindow):
 			self.email_label.setGeometry(94, 230, 151, 61)
 			self.email_textbox = QLineEdit(self)
 			self.email_textbox.setGeometry(250, 250, 221, 21)
+			self.email_textbox.setStyleSheet('font: 11pt "Verdana";')
 			self.setTabOrder(self.ui.device_textbox, self.ui.email_textbox)
 			self.ui.email_textbox.returnPressed.connect(lambda: self.ui.register_button.animateClick())
 			self.email_label.show()
@@ -373,7 +376,7 @@ class MainWindow(QMainWindow):
 					'<html><head/><body><p><span style=" color:#ff0000;">*</span>Username</p></body></html>')
 				self.email_textbox.deleteLater()
 				self.email_label.deleteLater()
-				self.ui.progress_label.move(160, 310)
+				self.ui.progress_label.move(10, 330)
 				self.ui.register_button.move(230, 280)
 				self.ui.sponsor_label.setGeometry(95, 220, 151, 41)
 				self.ui.sponsor_textbox.move(250, 230)
@@ -469,15 +472,28 @@ class MainWindow(QMainWindow):
 
 	def play_splash(self, bool_val):
 
+		def blur_objects(blur=True):
+			objects = [QLabel, QPushButton, QLineEdit, QCheckBox, QMenu, QMenuBar]
+
+			for item in objects:
+				for child in self.findChildren(item):
+					if child is not self.ui.progress_label and child is not self.gif_label:
+						if blur:
+							child.setGraphicsEffect(QGraphicsBlurEffect())
+						else:
+							child.setGraphicsEffect(QGraphicsBlurEffect().setBlurRadius(0))
+
 		if bool_val:
 			self.gif_label = QLabel(self)
 			self.gif_label.setScaledContents(True)
 			self.gif_label.setGeometry(140, 20, 301, 307)
 			self.movie = QMovie(_gif)
 			self.gif_label.setMovie(self.movie)
+			blur_objects(blur=True)
 			self.gif_label.show()
 			self.movie.start()
 		else:
+			blur_objects(blur=False)
 			self.movie.stop()
 			self.movie.deleteLater()
 			self.gif_label.deleteLater()
