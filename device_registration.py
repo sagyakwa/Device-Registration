@@ -9,7 +9,7 @@ from os.path import join, dirname, abspath
 import yaml
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot
 from PyQt5.QtGui import QIcon, QMovie
-from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel, QGraphicsBlurEffect
+from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -25,7 +25,7 @@ from modern_ui import styles
 from modern_ui import windows
 
 _UI = join(dirname(abspath(__file__)), 'mainwindow.ui')
-_gif = join(dirname(abspath(__file__)), 'ball_roll.gif')
+_gif = join(dirname(abspath(__file__)), 'cube.gif')
 _config = join(dirname(abspath(__file__)), 'config')
 _about = join(dirname(abspath(__file__)), 'about')
 _help = join(dirname(abspath(__file__)), 'help')
@@ -41,7 +41,7 @@ class Signals(QObject):
 
 
 class RegisterThread(QRunnable):
-	def __init__(self, username, mac_address, device_type, sponsor, user_type='student'):
+	def __init__(self, username: object, mac_address: object, device_type: object, sponsor: object, user_type: object = 'student') -> object:
 		super(RegisterThread, self).__init__()
 		self.signals = Signals()
 		credential_location = join(dirname(abspath(__file__)), 'credentials')
@@ -54,7 +54,7 @@ class RegisterThread(QRunnable):
 		self.sponsor = sponsor
 		self.user_type = user_type
 		self.options = Options()
-		self.options.headless = True  # True to make headless, False to make browser visible
+		self.options.headless = False  # True to make headless, False to make browser visible
 
 	def run(self):
 		# Make dictionary to check whether format of text boxes are correct
@@ -71,7 +71,7 @@ class RegisterThread(QRunnable):
 
 		# Check to see that there is some text in the Text boxes and it is correctly formatted
 		if all(everything.values()):
-			self.execute()
+			self.start_execute()
 		else:
 			# if self.user_type != 'student' or self.user_type != 'faculty':
 			#     everything.update(correct_email=bool(self.check_email(self.user_type)))
@@ -95,44 +95,39 @@ class RegisterThread(QRunnable):
 			self.signals.popup_signal.emit('Errors in your form', msg)
 			self.signals.set_button_clicked_signal.emit(False)
 
-	def execute(self):
+	def start_execute(self):
 		self.signals.play_splash_signal.emit(True)
 		self.signals.label_update_signal.emit("Starting...")
 		self.signals.disable_widgets_signal.emit(True)
 		self.browser = webdriver.Chrome(options=self.options)
+		self.signals.label_update_signal.emit("Hol' up...")
 		# go to the homepage
 		self.browser.get('http://fsunac-1.framingham.edu/administration')
+
+		def execute():
+			self.signals.label_update_signal.emit("Adding device...")
+			self.add_device()
+			self.signals.label_update_signal.emit("Done!")
+			self.browser.quit()
+			self.signals.play_splash_signal.emit(False)
+			self.signals.set_button_clicked_signal.emit(False)
+			self.signals.clear_textboxes_signal.emit()
+			self.signals.disable_widgets_signal.emit(False)
+			self.signals.popup_signal.emit('Congratulations', f'{self.username} has been '
+											f'registered\nwith the following MAC Address: {self.mac_address}')
+			self.signals.label_update_signal.emit("Ready")
+
 		try:
 			self.login()
 			self.signals.label_update_signal.emit("Finding user...")
 			if self.find_user():
 				self.signals.label_update_signal.emit("User found")
-				self.signals.label_update_signal.emit("Adding device...")
-				self.add_device()
-				self.signals.label_update_signal.emit("Done!")
-				self.browser.quit()
-				self.signals.set_button_clicked_signal.emit(False)
-				self.signals.clear_textboxes_signal.emit()
-				self.signals.disable_widgets_signal.emit(False)
-				self.signals.popup_signal.emit('Congratulations', f'User {self.username} has been '
-				f'registered\nwith the following MAC Address: {self.mac_address}')
-				self.signals.label_update_signal.emit("Ready")
+				execute()
 			else:
-				self.signals.label_update_signal.emit("User not found creating new user")
+				self.signals.label_update_signal.emit(f"{self.username} not found creating new user")
 				self.create_new_user()
 				self.find_user()
-				self.signals.label_update_signal.emit("Adding device...")
-				self.add_device()
-				self.signals.label_update_signal.emit("Done!")
-				self.browser.quit()
-				self.signals.set_button_clicked_signal.emit(False)
-				self.signals.clear_textboxes_signal.emit()
-				self.signals.disable_widgets_signal.emit(False)
-				self.signals.play_splash_signal.emit(False)
-				self.signals.popup_signal.emit('Congratulations', f'{self.username} has been '
-				f'registered\nwith the following '
-				f'MAC Address: {self.mac_address}')
-				self.signals.label_update_signal.emit("Ready")
+				execute()
 		except TimeoutException:
 			self.signals.play_splash_signal.emit(False)
 			self.signals.popup_signal.emit("Can't connect to the network", "Check your internet connect \n and make "
@@ -273,6 +268,20 @@ class RegisterThread(QRunnable):
 
 
 class MainWindow(QMainWindow):
+	registration_thread: RegisterThread
+	sponsor: object
+	device_type: object
+	mac_address: object
+	username: object
+	movie: QMovie
+	gif_label: QLabel
+	email_label: QLabel
+	email_textbox: QLineEdit
+	button_clicked: bool
+	user_type: str
+	light_mode_icon: QIcon
+	dark_mode_icon: QIcon
+
 	def __init__(self):
 		super(MainWindow, self).__init__()
 		self.thread_pool = QThreadPool()
@@ -280,6 +289,8 @@ class MainWindow(QMainWindow):
 		self.config = configparser.RawConfigParser()
 		self.center()
 		self.mw = windows.ModernWindow(self)
+
+	def initUI(self):
 		self.dark_mode_icon = QIcon('night_mode.ico')
 		self.light_mode_icon = QIcon('light_mode.ico')
 		self.ui.actionAbout.triggered.connect(self.show_about)
@@ -289,10 +300,6 @@ class MainWindow(QMainWindow):
 		self.ui.student_checkbox.stateChanged.connect(self.on_state_change)
 		self.ui.faculty_checkbox.stateChanged.connect(self.on_state_change)
 		self.ui.other_checkbox.stateChanged.connect(self.on_state_change)
-		self.username = None
-		self.mac_address = None
-		self.device_type = None
-		self.sponsor = None
 		self.user_type = 'student'
 		self.button_clicked = False
 		self.init_config()
@@ -421,10 +428,10 @@ class MainWindow(QMainWindow):
 		self.ui.device_textbox.clear()
 		try:
 			self.ui.email_textbox.clear()
-		except RuntimeError:
-			pass
-
-	# self.ui.sponsor_textbox.clear()
+		except RuntimeError as r:
+			print(r)
+		except AttributeError as a:
+			print(a)
 
 	def change_ui(self):
 		with open(_config, 'r'):
@@ -465,19 +472,15 @@ class MainWindow(QMainWindow):
 		if bool_val:
 			self.gif_label = QLabel(self)
 			self.gif_label.setScaledContents(True)
-			self.gif_label.setGeometry(170, 60, 256, 256)
+			self.gif_label.setGeometry(140, 20, 301, 307)
 			self.movie = QMovie(_gif)
 			self.gif_label.setMovie(self.movie)
-			self.gif_label.setGraphicsEffect(QGraphicsBlurEffect().setBlurRadius(0))
-			self.ui.progress_label.setGraphicsEffect(QGraphicsBlurEffect().setBlurRadius(0))
-			self.setGraphicsEffect(QGraphicsBlurEffect())
 			self.gif_label.show()
 			self.movie.start()
 		else:
 			self.movie.stop()
 			self.movie.deleteLater()
 			self.gif_label.deleteLater()
-			self.setGraphicsEffect(QGraphicsBlurEffect().setBlurRadius(0))
 
 	@Slot()
 	def on_register_button_clicked(self):
