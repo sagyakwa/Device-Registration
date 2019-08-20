@@ -65,7 +65,7 @@ class ModernWindow(QWidget):
 
         self.setWindowTitle(w.windowTitle())
         self.setGeometry(w.geometry())
-        self.setFixedSize(600, 469)
+        self.setFixedSize(600, 474)
 
         self.installEventFilter(self)
 
