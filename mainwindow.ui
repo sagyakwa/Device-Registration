@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>600</width>
-    <height>469</height>
+    <height>474</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -101,17 +101,17 @@
    <widget class="QLabel" name="progress_label">
     <property name="geometry">
      <rect>
-      <x>160</x>
-      <y>310</y>
-      <width>281</width>
+      <x>10</x>
+      <y>330</y>
+      <width>581</width>
       <height>51</height>
      </rect>
     </property>
     <property name="styleSheet">
-     <string notr="true">font: 12pt &quot;Verdana&quot;;</string>
+     <string notr="true">font: 15pt &quot;Verdana&quot;;</string>
     </property>
     <property name="text">
-     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size:14pt;&quot;&gt;Ready&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-size15pt;&quot;&gt;Ready&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
     </property>
     <property name="alignment">
      <set>Qt::AlignCenter</set>
