@@ -4,7 +4,6 @@ import re
 import sys
 import webbrowser
 from datetime import datetime
-from os.path import join, dirname, abspath
 
 import yaml
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot
@@ -25,12 +24,19 @@ from selenium.webdriver.support.ui import WebDriverWait
 from modern_ui import styles
 from modern_ui import windows
 
-_UI = join(dirname(abspath(__file__)), 'mainwindow.ui')
-_gif = join(dirname(abspath(__file__)), 'cube.gif')
-_logo = join(dirname(abspath(__file__)), 'purple_flame.svg')
-_config = join(dirname(abspath(__file__)), 'config')
-_about = join(dirname(abspath(__file__)), 'about')
-_help = join(dirname(abspath(__file__)), 'help')
+
+def resource_path(relative_path):
+	if hasattr(sys, '_MEIPASS'):
+		return os.path.join(sys._MEIPASS, relative_path)
+	return os.path.join(os.path.abspath("."), relative_path)
+
+
+_UI = resource_path('mainwindow.ui')
+_gif = resource_path('cube.gif')
+_logo = resource_path('purple_flame.svg')
+_config = resource_path('config')
+_about = resource_path('about')
+_help = resource_path('help')
 
 
 class Signals(QObject):
@@ -46,7 +52,7 @@ class RegisterThread(QRunnable):
 	def __init__(self, username: object, mac_address: object, device_type: object, sponsor: object, user_type: object = 'student') -> object:
 		super(RegisterThread, self).__init__()
 		self.signals = Signals()
-		credential_location = join(dirname(abspath(__file__)), 'credentials')
+		credential_location = resource_path('credentials')
 		credentials = yaml.safe_load(open(credential_location))
 		self.login_username = credentials['credentials']['username']
 		self.login_password = credentials['credentials']['password']
@@ -116,7 +122,7 @@ class RegisterThread(QRunnable):
 			self.signals.clear_textboxes_signal.emit()
 			self.signals.disable_widgets_signal.emit(False)
 			self.signals.popup_signal.emit('Congratulations', f'{self.username} has been '
-											f'registered\nwith the following MAC Address: {self.mac_address}')
+											f'registered\nwith {self.mac_address}')
 			self.signals.label_update_signal.emit("Ready")
 
 		try:
