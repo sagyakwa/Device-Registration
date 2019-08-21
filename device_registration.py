@@ -10,6 +10,8 @@ from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool,
 from PyQt5.QtGui import QIcon, QMovie
 from PyQt5.QtWidgets import QPushButton, QLineEdit, QLabel, QCheckBox, QGraphicsBlurEffect, \
 	QMenu, QMenuBar
+from modern_ui import styles
+from modern_ui import windows
 from qtpy import uic
 from qtpy.QtCore import Slot
 from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
@@ -21,10 +23,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
-
-
-# from .styles import
-# from . import windows
 
 
 def resource_path(relative_path):
