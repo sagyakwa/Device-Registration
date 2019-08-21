@@ -16,13 +16,15 @@ from qtpy.QtWidgets import QApplication, QMainWindow, QMessageBox
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 
-from modern_ui import styles
-from modern_ui import windows
+
+# from .styles import
+# from . import windows
 
 
 def resource_path(relative_path):
@@ -49,6 +51,8 @@ class Signals(QObject):
 
 
 class RegisterThread(QRunnable):
+	browser: WebDriver
+
 	def __init__(self, username: object, mac_address: object, device_type: object, sponsor: object, user_type: object = 'student') -> object:
 		super(RegisterThread, self).__init__()
 		self.signals = Signals()
@@ -66,7 +70,7 @@ class RegisterThread(QRunnable):
 
 	def run(self):
 		# Make dictionary to check whether format of text boxes are correct
-		global everything
+		# global everything
 		everything = {
 			'right_address': bool(self.check_mac_address(self.mac_address)),
 			'right_username': bool(self.check_username(self.username)),
