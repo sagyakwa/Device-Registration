@@ -4,6 +4,7 @@ import re
 import sys
 import webbrowser
 from datetime import datetime
+from os.path import join, dirname, abspath
 
 import yaml
 from PyQt5.QtCore import QObject, pyqtSignal, Qt, QRunnable, QSize, QThreadPool, pyqtSlot
@@ -26,9 +27,12 @@ from modern_ui import windows
 
 
 def resource_path(relative_path):
-	if hasattr(sys, '_MEIPASS'):
-		return os.path.join(sys._MEIPASS, relative_path)
-	return os.path.join(os.path.abspath("."), relative_path)
+	if getattr(sys, 'frozen', False):
+		path_type = os.path.dirname(sys.executable)
+		return os.path.join(path_type, relative_path)
+	else:
+		path_type = os.path.dirname(__file__)
+		return os.path.join(path_type, relative_path)
 
 
 _UI = resource_path('mainwindow.ui')
@@ -37,6 +41,7 @@ _logo = resource_path('purple_flame.svg')
 _config = resource_path('config')
 _about = resource_path('about')
 _help = resource_path('help')
+_chrome_driver = resource_path('chromedriver.exe')
 
 
 class Signals(QObject):
@@ -109,7 +114,7 @@ class RegisterThread(QRunnable):
 		self.signals.play_splash_signal.emit(True)
 		self.signals.label_update_signal.emit("Starting...")
 		self.signals.disable_widgets_signal.emit(True)
-		self.browser = webdriver.Chrome(options=self.options)
+		self.browser = webdriver.Chrome(_chrome_driver, options=self.options)
 		self.signals.label_update_signal.emit("Hol' up...")
 		# go to the homepage
 		self.browser.get('http://fsunac-1.framingham.edu/administration')
